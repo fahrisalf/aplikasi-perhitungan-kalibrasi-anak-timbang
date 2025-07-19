@@ -42,16 +42,17 @@ def hitung_kalibrasi_revisi(data):
 
         # --- Perhitungan Ketidakpastian diperluas (semua dalam mg) ---
 def derajat_kebebasan():
-    v1 = 60
-    c1 = 1
-    v2 = len(selisih_pembacaan_g)-1
-    c2 = 1
-    v3 = 1*(10**10)
-    c3 = 1
-    v4 = 100
-    c4 = ((1 / densitas_anak_timbang)-(1/8000))*(massa_nominal_g/1000)
-    v5 = 4
-    c5 = 1
+    try:
+        v1 = 60
+        c1 = 1
+        v2 = len(selisih_pembacaan_g)-1
+        c2 = 1
+        v3 = 1*(10**10)
+        c3 = 1
+        v4 = 100
+        c4 = ((1 / densitas_anak_timbang)-(1/8000))*(massa_nominal_g/1000)
+        v5 = 4
+        c5 = 1
         
         selisih_pembacaan_mg = selisih_pembacaan_g*1000
         u_standar_massa_U1 = ketidakpastian_mg / faktor_cakupan
