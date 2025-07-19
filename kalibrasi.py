@@ -1,4 +1,4 @@
-# File: app_streamlit.py
+# File: kalibrasi.py
 # Aplikasi Kalibrasi Anak Timbang menggunakan Streamlit
 
 import streamlit as st
@@ -15,70 +15,83 @@ def hitung_kalibrasi_revisi(data):
     """
     try:
         # --- Ambil Data Input ---
-        m_s_konvensional_g = data['massa_s_konvensional']
-        u_s_sertifikat_mg = data['ketidakpastian_s']
+        massa_konvensional_g = data['nilai_massa_konvensional']
+        ketidakpastian_mg = data['ketidakpastian']
         faktor_cakupan = data['faktor_cakupan']
         
-        m_t_nominal_kg = data['massa_t_nominal']
-        resolusi_mg = data['resolusi']
+        massa_nominal_g = data['massa_nominal']
+        densitas_anak_timbang = data['densitas_anak_timbang_uji']
         mpe_mg = data['mpe']
+        
+        kapasitas_g = data['kapasitas']
+        resolusi_mg = data['resolusi']
 
-        # --- Data Pembacaan Berulang (dianggap dalam mg) ---
-        pembacaan_s_mg = data['pembacaan_s_list']
-        pembacaan_t_mg = data['pembacaan_t_list']
+        # --- Data Pembacaan Berulang (dianggap dalam g) ---
+        pembacaan_s_g = data['pembacaan_s_list']
+        pembacaan_t_g = data['pembacaan_t_list']
 
-        if len(pembacaan_s_mg) != len(pembacaan_t_mg) or not pembacaan_s_mg:
+        if len(pembacaan_s_g) != len(pembacaan_t_g) or not pembacaan_s_g:
             raise ValueError("Jumlah pembacaan Standar dan Uji harus sama dan tidak boleh kosong.")
 
         # --- Perhitungan Massa Konvensional UUT ---
-        selisih_pembacaan_mg = [(t - s) for s, t in zip(pembacaan_t_mg, pembacaan_s_mg)]
-        rata_rata_selisih_mg = statistics.mean(selisih_pembacaan_mg)
+        selisih_pembacaan_g = [(t - s) for s, t in zip(pembacaan_t_g, pembacaan_s_g)]
+        rata_rata_selisih_g = statistics.mean(selisih_pembacaan_g)
         
-        rata_rata_selisih_g = rata_rata_selisih_mg / 1000.0
+        massa_t_konvensional_g = massa_konvensional_g + rata_rata_selisih_g + 0
+
+        # --- Perhitungan Ketidakpastian diperluas (semua dalam mg) ---
+        def derajat_kebebasan():
+            v1 = 60
+            c1 = 1
+            v2 = len(selisih_pembacaan_g)-1
+            c2 = 1
+            v3 = 1*(10**10)
+            c3 = 1
+            v4 = 100
+            c4 = ((1 / densitas_anak_timbang)-(1/8000))*(massa_nominal_g/1000)
+            v5 = 4
+            c5 = 1
         
-        massa_t_konvensional_g = m_s_konvensional_g + rata_rata_selisih_g
-
-        # --- Perhitungan Koreksi (C) ---
-        m_t_nominal_g = m_t_nominal_kg * 1000.0
-        koreksi_g = massa_t_konvensional_g - m_t_nominal_g
-        koreksi_mg = koreksi_g * 1000.0
-
-        # --- Perhitungan Anggaran Ketidakpastian (semua dalam gram) ---
-        u_s_g = (u_s_sertifikat_mg / 1000.0) / faktor_cakupan
-
+        selisih_pembacaan_mg = selisih_pembacaan_g*1000
+        u_standar_massa_U1 = ketidakpastian_mg / faktor cakupan
+        uc_U1 = u_standar_massa_U1*c1
+        uc1_U1 = uc_U1**2
+        uc2_U1 = uc_U1**4/v1
+        
         if len(selisih_pembacaan_mg) > 1:
             stdev_mg = statistics.stdev(selisih_pembacaan_mg)
         else:
             stdev_mg = 0
-        u_rep_g = stdev_mg / 1000.0
+        u_daya_ulang_pembacaan_U2 = stdev_mg / math.sqrt(len(selisih_pembacaan_mg))
+        uc_U2 = u_daya_ulang_pembacaan_U2*c2
+        uc1_U2 = uc_U2**2
+        uc2_U2 = uc_U2**4/v2
+        
+        u_resolusi_timbangan_U3 = (resolusi_mg / 2) / math.sqrt(3)
+        uc_U3 = u_resolusi_timbangan_U3*c3
+        uc1_U3 = uc_U3**2
+        uc2_U3 = uc_U3**4/v3
+ 
+        u_bouyancy_U4 = 120000 / math.sqrt(3)
+        uc_U4 = u_bouyancy_U4*c4
+        uc1_U4 = uc_U4**2
+        uc2_U4 = uc_U4**4/v4
+        
+        u_instability_U5 = ((8/100)*mpe_mg)/1
+        uc_U5 = u_instability_U5*c5
+        uc1_U5 = uc_U5**2
+        uc2_U5 = uc_U5**4/v1
+        
+        uc1_kuadrat_mg = uc1_U1 + uc1_U2 + uc1_U3 + uc1_U4 + uc1_U5
+        uc1_g = math.sqrt(uc_kuadrat_mg)
 
-        resolusi_g = resolusi_mg / 1000.0
-        u_res_g = (resolusi_g / 2) / math.sqrt(3)
+        uc2_kuadrat_mg = uc2_U1 + uc2_U2 + uc2_U3 + uc2_U4 + uc2_U5
+        uc2_veff = (uc1_g**4) / uc2_kuadrat_mg
 
-        u_c_kuadrat_g = u_s_g**2 + u_rep_g**2 + u_res_g**2
-        u_c_g = math.sqrt(u_c_kuadrat_g)
-
-        ketidakpastian_diperluas_g = u_c_g * faktor_cakupan
-        ketidakpastian_diperluas_mg = ketidakpastian_diperluas_g * 1000.0
-
-        # --- Pengecekan MPE (Maximum Permissible Error) ---
-        if abs(koreksi_mg) + ketidakpastian_diperluas_mg <= mpe_mg:
-            mpe_status = "LULUS"
-        else:
-            mpe_status = "TIDAK LULUS"
-
-        return {
-            "nominal_g": m_t_nominal_g,
-            "massa_konvensional": massa_t_konvensional_g,
-            "koreksi_mg": koreksi_mg,
-            "ketidakpastian_diperluas": ketidakpastian_diperluas_g,
-            "faktor_cakupan": faktor_cakupan,
-            "mpe_status": mpe_status,
-            "error": None
-        }
-
-    except Exception as e:
-        return {"error": str(e)}
+        faktor_cakupan_k = 1,95996 + (2,37356 / uc2_veff) + (2,818745 / (uc2_veff**2)) + (2,546662 / (uc2_veff**3)) + (1,761829 / (uc2_veff**4)) + (0,245458 / (uc2_veff**5)) + (1,000764 / (uc2_veff**6))
+        
+        ketidakpastian_diperluas_mg = uc1_g * faktor_cakupan_k
+        ketidakpastian_diperluas_g = ketidakpastian_diperluas_mg * 1000.0
 
 # =====================================================================
 # BAGIAN TAMPILAN WEB STREAMLIT
@@ -87,7 +100,7 @@ def hitung_kalibrasi_revisi(data):
 st.set_page_config(page_title="Kalkulator Kalibrasi", layout="wide")
 
 st.title("Kalkulator Kalibrasi Anak Timbang")
-st.markdown("Aplikasi untuk analisis ketidakpastian pengukuran berdasarkan metode perbandingan.")
+st.markdown("Aplikasi untuk menghitung ketidakpastian dari kalibrasi anak timbang berdasarkan metode perbandingan.")
 
 # Inisialisasi session state untuk menyimpan jumlah baris pengulangan
 if 'num_readings' not in st.session_state:
@@ -100,15 +113,15 @@ with st.form(key='kalibrasi_form'):
 
     with col1:
         st.subheader("1. Anak Timbang Standar (S)")
-        massa_s_konvensional = st.number_input("Nilai Massa Konvensional (g)", format="%.5f", step=1.0)
-        ketidakpastian_s = st.number_input("Ketidakpastian (mg)", format="%.5f", step=0.1)
+        nilai_massa_konvensional = st.number_input("Nilai Massa Konvensional (g)", format="%.5f", step=1.0)
+        ketidakpastian = st.number_input("Ketidakpastian (mg)", format="%.5f", step=0.1)
         faktor_cakupan = st.number_input("Faktor Cakupan (k)", value=2.0, step=0.1, help="Default adalah 2")
         
         st.divider()
 
         st.subheader("2. Anak Timbang Uji (T)")
-        massa_t_nominal = st.number_input("Massa Nominal (Kg)", format="%.5f", step=1.0)
-        densitas_t = st.number_input("Densitas Anak Timbang Uji (kg/m³)", value=7950.0)
+        massa_nominal = st.number_input("Massa Nominal (g)", format="%.5f", step=1.0)
+        densitas_anak_timbang_uji = st.number_input("Densitas Anak Timbang Uji (kg/m³)", value=7950.0)
         mpe = st.number_input("Maximum Permissible Error (MPE) (mg)", format="%.5f", step=1.0)
 
     with col2:
@@ -153,11 +166,11 @@ with form_col2:
 # --- Logika Setelah Tombol Ditekan ---
 if submit_button:
     data_input = {
-        'massa_s_konvensional': massa_s_konvensional,
-        'ketidakpastian_s': ketidakpastian_s,
+        'nilai_massa_konvensional': nilai_massa_konvensional,
+        'ketidakpastian': ketidakpastian,
         'faktor_cakupan': faktor_cakupan,
-        'massa_t_nominal': massa_t_nominal,
-        'densitas_t': densitas_t,
+        'massa_nominal': massa_nominal,
+        'densitas_anak_timbang_uji': densitas_anak_timbang_uji,
         'mpe': mpe,
         'kapasitas': kapasitas,
         'resolusi': resolusi,
@@ -175,15 +188,12 @@ if submit_button:
     else:
         res_col1, res_col2, res_col3 = st.columns(3)
         with res_col1:
-            st.metric(label="Massa Konvensional (g)", value=f"{hasil['massa_konvensional']:.5f}")
+            st.metric(label="Massa Nominal (g)", value=f"{['massa_nominal_g']:.5f}")
         with res_col2:
-            st.metric(label="Koreksi (mg)", value=f"{hasil['koreksi_mg']:.3f}")
+            st.metric(label="Massa Konvensional (g)", value=f"{hasil['massa_t_konvensional_g']:.3f}")
         with res_col3:
-            st.metric(label="Ketidakpastian Diperluas (g)", value=f"{hasil['ketidakpastian_diperluas']:.5f}")
+            st.metric(label="Ketidakpastian (g)", value=f"{hasil['ketidakpastian_diperluas_g']:.5f}")
+        with res_col3:
+            st.metric(label="Faktor cakupan (k)", value=f"{hasil['faktor_cakupan_k']:.5f}")
 
         st.markdown("<br>", unsafe_allow_html=True)
-
-        if hasil['mpe_status'] == 'LULUS':
-            st.success(f"**Status MPE: {hasil['mpe_status']}**", icon="✅")
-        else:
-            st.error(f"**Status MPE: {hasil['mpe_status']}**", icon="❌")
