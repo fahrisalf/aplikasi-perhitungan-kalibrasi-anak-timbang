@@ -9,7 +9,6 @@ import statistics
 # BAGIAN TAMPILAN WEB STREAMLIT
 # =====================================================================
 
-# Move st.set_page_config to the very beginning of the Streamlit app setup
 st.set_page_config(page_title="Kalkulator Kalibrasi", layout="wide")
 
 st.title("Kalkulator Kalibrasi Anak Timbang")
