@@ -94,7 +94,7 @@ def hitung_kalibrasi_revisi(data):
         k4 = (2,546662 / (uc2_veff**3))
         k5 = (1,761829 / (uc2_veff**4))
         k6 = (0,245458 / (uc2_veff**5))
-        k7 = (1,000764 / (uc2_veff**6))
+        k7 = (1,0o0764 / (uc2_veff**6))
         faktor_cakupan_k = k1 + k2 + k3 + k4 + k5 + k6 + k7
         
         ketidakpastian_diperluas_mg = uc1_g * faktor_cakupan_k
