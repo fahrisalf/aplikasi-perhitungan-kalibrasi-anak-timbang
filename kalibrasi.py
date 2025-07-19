@@ -4,6 +4,7 @@
 import streamlit as st
 import math
 import statistics
+from scipy.stats import t
 
 # =====================================================================
 # BAGIAN LOGIKA PERHITUNGAN
