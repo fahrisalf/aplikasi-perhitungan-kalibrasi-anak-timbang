@@ -86,7 +86,7 @@ def hitung_kalibrasi_revisi(data):
 
 st.set_page_config(page_title="Kalkulator Kalibrasi", layout="wide")
 
-st.title("Kalkulator Kalibrasi Anak Timbang")
+st.title("Kalkulator Kalibrasi Anak Timbang Hehe")
 st.markdown("Aplikasi untuk analisis ketidakpastian pengukuran berdasarkan metode perbandingan.")
 
 # Inisialisasi session state untuk menyimpan jumlah baris pengulangan
