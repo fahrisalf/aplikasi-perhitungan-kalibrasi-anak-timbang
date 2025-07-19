@@ -88,7 +88,7 @@ def hitung_kalibrasi_revisi(data):
         uc2_kuadrat_mg = uc2_U1 + uc2_U2 + uc2_U3 + uc2_U4 + uc2_U5
         uc2_veff = (uc1_g**4) / uc2_kuadrat_mg
 
-        faktor_cakupan_k = 1,95996 + (2,37356 / uc2_veff) + (2,818745 / (uc2_veff**2)) + (2,546662 / (uc2_veff**3)) + (1,761829 / (uc2_veff**4)) + (0,245458 / (uc2_veff**5)) + (1,000764 / (uc2_veff**6))
+        faktor_cakupan_k = math.tinv(0,05;uc2_veff)
         
         ketidakpastian_diperluas_mg = uc1_g * faktor_cakupan_k
         ketidakpastian_diperluas_g = ketidakpastian_diperluas_mg * 1000.0
