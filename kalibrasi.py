@@ -53,7 +53,7 @@ def hitung_kalibrasi_revisi(data):
             c5 = 1
         
         selisih_pembacaan_mg = selisih_pembacaan_g*1000
-        u_standar_massa_U1 = ketidakpastian_mg / faktor cakupan
+        u_standar_massa_U1 = ketidakpastian_mg / faktor_cakupan
         uc_U1 = u_standar_massa_U1*c1
         uc1_U1 = uc_U1**2
         uc2_U1 = uc_U1**4/v1
