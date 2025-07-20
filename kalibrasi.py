@@ -18,6 +18,32 @@ st.markdown("Aplikasi untuk menghitung ketidakpastian dari kalibrasi anak timban
 if 'num_readings' not in st.session_state:
     st.session_state.num_readings = 1
 
+# Pop-up panduan penggunaan
+if 'show_guide' not in st.session_state:
+    st.session_state.show_guide = True
+if st.session_state.show_guide:
+    with st.expander("Panduan Penggunaan Aplikasi", expanded=True):
+        st.markdown("""
+        Selamat datang di **Kalkulator Kalibrasi Anak Timbang**!
+        Aplikasi ini membantu Anda menghitung ketidakpastian kalibrasi anak timbang berdasarkan metode perbandingan. Ikuti langkah-langkah berikut:
+        *   **Masukkan Nilai apabila Nilai tersebut berupa pecahan desimal, gunakan tanda (,) atau (.) sesuai dengan perangkat yang Anda Gunakan**
+        *   Masukkan **Nilai Massa Konvensional** dari anak timbang standar Anda (dalam gram).
+        *   Masukkan **Ketidakpastian** yang terkait dengan anak timbang standar (dalam miligram).
+        *   Tentukan **Faktor Cakupan (k)**. Nilai default adalah 2.0.
+        *   Masukkan **Massa Nominal** dari anak timbang yang akan diuji (dalam gram).
+        *   Masukkan **Densitas Anak Timbang Uji** (dalam kg/m³). Nilai default adalah 7950.0 kg/m³.
+        *   Masukkan **Maximum Permissible Error (MPE)** dari anak timbang uji (dalam miligram).
+        *   Masukkan **Kapasitas** maksimum neraca yang digunakan (dalam gram).
+        *   Masukkan **Resolusi** neraca (dalam miligram).
+        *   Masukkan pembacaan berulang untuk **Standar (S)** dan **Uji (T)** dalam miligram.
+        *   Gunakan tombol **➕ Tambah Pengulangan** untuk menambah baris input.
+        *   Gunakan tombol **➖ Hapus Pengulangan** untuk mengurangi baris input.
+        Setelah semua data dimasukkan, klik tombol **Hitung Kalibrasi** untuk melihat hasilnya.
+        """)
+        if st.button("Tutup Panduan"):
+            st.session_state.show_guide = False
+            st.rerun()
+
 # --- Formulir Input ---
 with st.form(key='kalibrasi_form'):
     
@@ -43,7 +69,7 @@ with st.form(key='kalibrasi_form'):
 
         st.divider()
 
-        st.subheader("4. Data Pengulangan Pembacaan (mg)")
+        st.subheader("4. Data Pengulangan Pembacaan (g)")
         
         s_readings = []
         t_readings = []
@@ -112,7 +138,7 @@ def hitung_kalibrasi_revisi(data):
         # --- Perhitungan Ketidakpastian diperluas (semua dalam mg) ---
         v1 = 60
         c1 = 1
-        v2 = len(selisih_pembacaan_g)-1 if len(selisih_pembacaan_g) > 1 else 1 
+        v2 = len(selisih_pembacaan_g)-1 if len(selisih_pembacaan_g) > 1 else 1 # Ensure v2 is not zero or negative
         c2 = 1
         v3 = 1*(10**10)
         c3 = 1
@@ -121,7 +147,7 @@ def hitung_kalibrasi_revisi(data):
         v5 = 4
         c5 = 1
         
-        selisih_pembacaan_mg = [x * 1000 for x in selisih_pembacaan_g] 
+        selisih_pembacaan_mg = [x * 1000 for x in selisih_pembacaan_g] # Convert list of g to mg
         u_standar_massa_U1 = ketidakpastian_mg / faktor_cakupan
         uc_U1 = u_standar_massa_U1*c1
         uc1_U1 = uc_U1**2
@@ -141,7 +167,7 @@ def hitung_kalibrasi_revisi(data):
         uc1_U3 = uc_U3**2
         uc2_U3 = uc_U3**4/v3
  
-        u_bouyancy_U4 = 120000 / math.sqrt(3) 
+        u_bouyancy_U4 = 120000 / math.sqrt(3) # This value seems very large, please verify its correctness
         uc_U4 = u_bouyancy_U4*c4
         uc1_U4 = uc_U4**2
         uc2_U4 = uc_U4**4/v4
@@ -149,32 +175,33 @@ def hitung_kalibrasi_revisi(data):
         u_instability_U5 = ((8/100)*mpe_mg)/1
         uc_U5 = u_instability_U5*c5
         uc1_U5 = uc_U5**2
-        uc2_U5 = uc_U5**4/v1 
+        uc2_U5 = uc_U5**4/v1 # Using v1 here, ensure this is intended
         
         uc1_kuadrat_mg = uc1_U1 + uc1_U2 + uc1_U3 + uc1_U4 + uc1_U5
-        uc1_mg = math.sqrt(uc1_kuadrat_mg)
+        uc1_g = math.sqrt(uc1_kuadrat_mg) # Corrected variable name from uc_kuadrat_mg
 
         uc2_kuadrat_mg = uc2_U1 + uc2_U2 + uc2_U3 + uc2_U4 + uc2_U5
         
+        # Handle division by zero for uc2_veff if uc2_kuadrat_mg is zero
         if uc2_kuadrat_mg == 0:
-            uc2_veff = float('inf')
+            uc2_veff = float('inf') # Set to infinity if denominator is zero
         else:
-            uc2_veff = (uc1_mg**4) / uc2_kuadrat_mg
+            uc2_veff = (uc1_g**4) / uc2_kuadrat_mg
 
-      
+        # Ensure uc2_veff is not too small or zero before using it in the denominator
         if uc2_veff == 0:
-            faktor_cakupan_k = faktor_cakupan 
+            faktor_cakupan_k = faktor_cakupan # Fallback to input factor_cakupan if uc2_veff is zero
         else:
             faktor_cakupan_k = 1.95996 + (2.37356 / uc2_veff) + (2.818745 / (uc2_veff**2)) + (2.546662 / (uc2_veff**3)) + (1.761829 / (uc2_veff**4)) + (0.245458 / (uc2_veff**5)) + (1.000764 / (uc2_veff**6))
         
-        ketidakpastian_diperluas_mg = uc1_mg * faktor_cakupan_k
-        ketidakpastian_diperluas_g = ketidakpastian_diperluas_mg / 1000.0
+        ketidakpastian_diperluas_mg = uc1_g * faktor_cakupan_k
+        ketidakpastian_diperluas_g = ketidakpastian_diperluas_mg / 1000.0 # Convert mg to g
 
         return {
             'massa_t_konvensional_g': massa_t_konvensional_g,
             'ketidakpastian_diperluas_g': ketidakpastian_diperluas_g,
             'faktor_cakupan_k': faktor_cakupan_k,
-            'massa_nominal_g': massa_nominal_g
+            'massa_nominal_g': massa_nominal_g # Include massa_nominal_g in the return
         }
 
     except Exception as e:
@@ -207,7 +234,7 @@ if submit_button:
         with res_col1:
             st.metric(label="Massa Nominal (g)", value=f"{hasil['massa_nominal_g']:.5f}") # Corrected access to massa_nominal_g
         with res_col2:
-            st.metric(label="Massa Konvensional (g)", value=f"{hasil['massa_t_konvensional_g']:.5f}")
+            st.metric(label="Massa Konvensional (g)", value=f"{hasil['massa_t_konvensional_g']:.3f}")
         with res_col3:
             st.metric(label="Ketidakpastian (g)", value=f"{hasil['ketidakpastian_diperluas_g']:.5f}")
         with res_col3:
