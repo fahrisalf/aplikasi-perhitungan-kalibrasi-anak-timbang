@@ -234,7 +234,7 @@ if submit_button:
         with res_col1:
             st.metric(label="Massa Nominal (g)", value=f"{hasil['massa_nominal_g']:.5f}") # Corrected access to massa_nominal_g
         with res_col2:
-            st.metric(label="Massa Konvensional (g)", value=f"{hasil['massa_t_konvensional_g']:.3f}")
+            st.metric(label="Massa Konvensional (g)", value=f"{hasil['massa_t_konvensional_g']:.5f}")
         with res_col3:
             st.metric(label="Ketidakpastian (g)", value=f"{hasil['ketidakpastian_diperluas_g']:.5f}")
         with res_col3:
