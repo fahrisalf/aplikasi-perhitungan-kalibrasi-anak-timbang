@@ -1,0 +1,85 @@
+/* style.css */
+
+[data-testid="stAppViewContainer"] {
+    /* Placeholder ini akan diganti oleh kode Python */
+    background-image: url("data:image/jpeg;base64,{KODE_BASE64}");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+[data-testid="stSidebar"] > div:first-child {
+    background-color: rgba(15, 15, 15, 0.75) !important;
+    backdrop-filter: blur(10px) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] li,
+[data-testid="stSidebar"] .st-emotion-cache-1629p8f span,
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+    color: white;
+}
+
+[data-testid="stSidebar"] [data-testid="stInfo"] {
+    background-color: rgba(0, 104, 225, 0.25);
+    border: 1px solid rgba(0, 104, 225, 0.5);
+}
+
+[data-testid="stHeader"] {
+    background-color: rgba(0,0,0,0);
+}
+
+/* === [PERUBAHAN] Menambahkan h1 agar judul utama berwarna putih === */
+h1, h2 {
+    color: white !important;
+}
+
+[data-testid="stForm"] {
+    background-color: rgba(15, 15, 15, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+[data-testid="stForm"] label, [data-testid="stForm"] h3 {
+    color: #FFFFFF;
+}
+
+[data-testid="stForm"] hr {
+    border-top-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-testid="stDecoratedContainer"] {
+    background-color: rgba(15, 15, 15, 0.7) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 10px !important;
+    padding: 25px !important;
+    margin-top: 20px !important;
+}
+
+[data-testid="stDecoratedContainer"] h2, 
+[data-testid="stDecoratedContainer"] h3, 
+[data-testid="stDecoratedContainer"] p {
+    color: white;
+}
+
+[data-testid="stDecoratedContainer"] .stButton button {
+    border-color: white;
+    color: white;
+}
+
+[data-testid="stDecoratedContainer"] [data-testid="stMetric"] {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    padding: 10px !important;
+}
+
+[data-testid="stDecoratedContainer"] [data-testid="stMetricLabel"] p {
+    color: #b0b0b0 !important;
+}
