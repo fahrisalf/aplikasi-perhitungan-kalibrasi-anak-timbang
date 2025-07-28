@@ -146,7 +146,7 @@ with st.sidebar:
     with st.expander("📖 Panduan Penggunaan", expanded=True):
         st.markdown("""
         1.  **Isi Parameter Input** di halaman utama.
-        2.  **Gunakan tanda titik `.`** sebagai pemisah desimal.
+        2.  **Gunakan tanda titik `.`** atau ','** sebagai pemisah desimal.
         3.  **Kelola Pengulangan** dengan tombol `➕ Tambah` atau `➖ Hapus`.
         4.  **Klik `🚀 Hitung Kalibrasi`**.
         5.  **Hasil perhitungan** dan **prosesnya** akan muncul di bawah.
