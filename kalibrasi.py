@@ -1,109 +1,14 @@
-# File: kalibrasi.py
+# File: kalibrasi_neraca.py
 # Aplikasi Kalibrasi Anak Timbang menggunakan Streamlit
 
 import streamlit as st
 import math
 import statistics
+import base64
 
-# =====================================================================
-# BAGIAN TAMPILAN WEB STREAMLIT
-# =====================================================================
-
-st.set_page_config(page_title="Kalkulator Kalibrasi", layout="wide")
-
-st.title("Kalkulator Kalibrasi Anak Timbang")
-st.markdown("Aplikasi untuk menghitung ketidakpastian dari kalibrasi anak timbang berdasarkan metode perbandingan.")
-
-# Inisialisasi session state untuk menyimpan jumlah baris pengulangan
-if 'num_readings' not in st.session_state:
-    st.session_state.num_readings = 1
-
-# Pop-up panduan penggunaan
-if 'show_guide' not in st.session_state:
-    st.session_state.show_guide = True
-if st.session_state.show_guide:
-    with st.expander("Panduan Penggunaan Aplikasi", expanded=True):
-        st.markdown("""
-        Selamat datang di **Kalkulator Kalibrasi Anak Timbang**!
-        Aplikasi ini membantu Anda menghitung ketidakpastian kalibrasi anak timbang berdasarkan metode perbandingan. Ikuti langkah-langkah berikut:
-        *   **Masukkan Nilai apabila Nilai tersebut berupa pecahan desimal, gunakan tanda (,) atau (.) sesuai dengan perangkat yang Anda Gunakan**
-        *   Masukkan **Nilai Massa Konvensional** dari anak timbang standar Anda (dalam gram).
-        *   Masukkan **Ketidakpastian** yang terkait dengan anak timbang standar (dalam miligram).
-        *   Tentukan **Faktor Cakupan (k)**. Nilai default adalah 2.0.
-        *   Masukkan **Massa Nominal** dari anak timbang yang akan diuji (dalam gram).
-        *   Masukkan **Densitas Anak Timbang Uji** (dalam kg/m³). Nilai default adalah 7950.0 kg/m³.
-        *   Masukkan **Maximum Permissible Error (MPE)** dari anak timbang uji (dalam miligram).
-        *   Masukkan **Kapasitas** maksimum neraca yang digunakan (dalam gram).
-        *   Masukkan **Resolusi** neraca (dalam miligram).
-        *   Masukkan pembacaan berulang untuk **Standar (S)** dan **Uji (T)** dalam miligram.
-        *   Gunakan tombol **➕ Tambah Pengulangan** untuk menambah baris input.
-        *   Gunakan tombol **➖ Hapus Pengulangan** untuk mengurangi baris input.
-        Setelah semua data dimasukkan, klik tombol **Hitung Kalibrasi** untuk melihat hasilnya.
-        """)
-        if st.button("Tutup Panduan"):
-            st.session_state.show_guide = False
-            st.rerun()
-
-# --- Formulir Input ---
-with st.form(key='kalibrasi_form'):
-    
-    col1, col2 = st.columns(2, gap="large")
-
-    with col1:
-        st.subheader("1. Anak Timbang Standar (S)")
-        nilai_massa_konvensional = st.number_input("Nilai Massa Konvensional (g)", format="%.5f", step=1.0)
-        ketidakpastian = st.number_input("Ketidakpastian (mg)", format="%.5f", step=0.1)
-        faktor_cakupan = st.number_input("Faktor Cakupan (k)", value=2.0, step=0.1, help="Default adalah 2")
-        
-        st.divider()
-
-        st.subheader("2. Anak Timbang Uji (T)")
-        massa_nominal = st.number_input("Massa Nominal (g)", format="%.5f", step=1.0)
-        densitas_anak_timbang_uji = st.number_input("Densitas Anak Timbang Uji (kg/m³)", value=7950.0)
-        mpe = st.number_input("Maximum Permissible Error (MPE) (mg)", format="%.5f", step=1.0)
-
-    with col2:
-        st.subheader("3. Data Neraca")
-        kapasitas = st.number_input("Kapasitas (g)", format="%.2f", step=100.0)
-        resolusi = st.number_input("Resolusi (mg)", format="%.5f", step=0.01)
-
-        st.divider()
-
-        st.subheader("4. Data Pengulangan Pembacaan (g)")
-        
-        s_readings = []
-        t_readings = []
-        
-        # Buat kolom untuk pembacaan S dan T
-        read_col1, read_col2 = st.columns(2)
-        
-        for i in range(st.session_state.num_readings):
-            with read_col1:
-                s_readings.append(st.number_input(f"Standar S{i+1}", key=f"s_{i}", format="%.5f", step=0.1))
-            with read_col2:
-                t_readings.append(st.number_input(f"Uji T{i+1}", key=f"t_{i}", format="%.5f", step=0.1))
-
-    # Tombol submit di dalam form
-    submit_button = st.form_submit_button(label='Hitung Kalibrasi')
-
-# Tombol untuk menambah/mengurangi baris di luar form agar tidak men-submit data
-st.markdown("---")
-form_col1, form_col2, form_col3 = st.columns([1,1,5])
-
-with form_col1:
-    if st.button("➕ Tambah Pengulangan"):
-        st.session_state.num_readings += 1
-        st.rerun()
-
-with form_col2:
-    if st.session_state.num_readings > 1:
-        if st.button("➖ Hapus Pengulangan"):
-            st.session_state.num_readings -= 1
-            st.rerun()
-
-# =====================================================================
+# =========================
 # BAGIAN LOGIKA PERHITUNGAN
-# =====================================================================
+# =========================
 
 def hitung_kalibrasi_revisi(data):
     """
@@ -138,7 +43,7 @@ def hitung_kalibrasi_revisi(data):
         # --- Perhitungan Ketidakpastian diperluas (semua dalam mg) ---
         v1 = 60
         c1 = 1
-        v2 = len(selisih_pembacaan_g)-1 if len(selisih_pembacaan_g) > 1 else 1 # Ensure v2 is not zero or negative
+        v2 = len(selisih_pembacaan_g)-1 if len(selisih_pembacaan_g) > 1 else 1 
         c2 = 1
         v3 = 1*(10**10)
         c3 = 1
@@ -147,7 +52,7 @@ def hitung_kalibrasi_revisi(data):
         v5 = 4
         c5 = 1
         
-        selisih_pembacaan_mg = [x * 1000 for x in selisih_pembacaan_g] # Convert list of g to mg
+        selisih_pembacaan_mg = [x * 1000 for x in selisih_pembacaan_g] 
         u_standar_massa_U1 = ketidakpastian_mg / faktor_cakupan
         uc_U1 = u_standar_massa_U1*c1
         uc1_U1 = uc_U1**2
@@ -166,8 +71,8 @@ def hitung_kalibrasi_revisi(data):
         uc_U3 = u_resolusi_timbangan_U3*c3
         uc1_U3 = uc_U3**2
         uc2_U3 = uc_U3**4/v3
- 
-        u_bouyancy_U4 = 120000 / math.sqrt(3) # This value seems very large, please verify its correctness
+
+        u_bouyancy_U4 = 120000 / math.sqrt(3) 
         uc_U4 = u_bouyancy_U4*c4
         uc1_U4 = uc_U4**2
         uc2_U4 = uc_U4**4/v4
@@ -175,69 +80,157 @@ def hitung_kalibrasi_revisi(data):
         u_instability_U5 = ((8/100)*mpe_mg)/1
         uc_U5 = u_instability_U5*c5
         uc1_U5 = uc_U5**2
-        uc2_U5 = uc_U5**4/v1 # Using v1 here, ensure this is intended
+        uc2_U5 = uc_U5**4/v1 
         
         uc1_kuadrat_mg = uc1_U1 + uc1_U2 + uc1_U3 + uc1_U4 + uc1_U5
-        uc1_g = math.sqrt(uc1_kuadrat_mg) # Corrected variable name from uc_kuadrat_mg
+        uc1_g = math.sqrt(uc1_kuadrat_mg) 
 
         uc2_kuadrat_mg = uc2_U1 + uc2_U2 + uc2_U3 + uc2_U4 + uc2_U5
         
-        # Handle division by zero for uc2_veff if uc2_kuadrat_mg is zero
         if uc2_kuadrat_mg == 0:
-            uc2_veff = float('inf') # Set to infinity if denominator is zero
+            uc2_veff = float('inf') 
         else:
             uc2_veff = (uc1_g**4) / uc2_kuadrat_mg
 
-        # Ensure uc2_veff is not too small or zero before using it in the denominator
         if uc2_veff == 0:
-            faktor_cakupan_k = faktor_cakupan # Fallback to input factor_cakupan if uc2_veff is zero
+            faktor_cakupan_k = faktor_cakupan 
         else:
             faktor_cakupan_k = 1.95996 + (2.37356 / uc2_veff) + (2.818745 / (uc2_veff**2)) + (2.546662 / (uc2_veff**3)) + (1.761829 / (uc2_veff**4)) + (0.245458 / (uc2_veff**5)) + (1.000764 / (uc2_veff**6))
         
         ketidakpastian_diperluas_mg = uc1_g * faktor_cakupan_k
-        ketidakpastian_diperluas_g = ketidakpastian_diperluas_mg / 1000.0 # Convert mg to g
+        ketidakpastian_diperluas_g = ketidakpastian_diperluas_mg / 1000.0 
 
         return {
             'massa_t_konvensional_g': massa_t_konvensional_g,
             'ketidakpastian_diperluas_g': ketidakpastian_diperluas_g,
             'faktor_cakupan_k': faktor_cakupan_k,
-            'massa_nominal_g': massa_nominal_g # Include massa_nominal_g in the return
+            'massa_nominal_g': massa_nominal_g 
         }
 
     except Exception as e:
         return {"error": str(e)}
 
-# --- Logika Setelah Tombol Ditekan ---
+# =====================================================================
+# BAGIAN TAMPILAN WEB STREAMLIT
+# =====================================================================
+
+st.set_page_config(page_title="Kalkulator Kalibrasi Anak Timbang", page_icon="⚖️", layout="wide")
+
+@st.cache_data
+def get_img_as_base64(file):
+    """Fungsi untuk membaca file gambar dan mengonversinya ke base64."""
+    with open(file, "rb") as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+try:
+    img_base64 = get_img_as_base64("background.jpg")
+    
+    with open("style.css", "r") as f:
+        css_content = f.read()
+        
+    css_with_image = css_content.replace("{KODE_BASE64}", img_base64)
+    
+    st.markdown(f"<style>{css_with_image}</style>", unsafe_allow_html=True)
+    
+except FileNotFoundError:
+    st.error("Pastikan file 'background.jpg' dan 'style.css' berada di folder yang sama dengan skrip Python ini.")
+
+if 'num_readings' not in st.session_state:
+    st.session_state.num_readings = 3
+
+with st.sidebar:
+    st.title("⚖️ Kalkulator Kalibrasi Anak Timbang")
+    st.markdown("Aplikasi untuk menghitung hasil kalibrasi anak timbang.")
+    st.info("Selamat Datang! Silakan baca panduan dan isi parameter di halaman utama.")
+    with st.expander("📖 Panduan Penggunaan", expanded=True):
+        st.markdown("""
+        1.  **Isi Parameter Input** di halaman utama.
+        2.  **Gunakan tanda titik `.`** sebagai pemisah desimal.
+        3.  **Kelola Pengulangan** dengan tombol `➕ Tambah` atau `➖ Hapus`.
+        4.  **Klik `🚀 Hitung Kalibrasi`**.
+        5.  **Hasil perhitungan** dan **prosesnya** akan muncul di bawah.
+        """)
+
+    st.markdown("---") 
+    st.markdown("### Kelompok 6")
+    st.markdown("""
+    - **Annisa Widiyastuti Putri** (2460330)
+    - **Fahri Salman Alfarizi** (2460365)
+    - **Maula Izzati** (2460415)
+    - **Nayla Amanda Zalfa** (2460463)
+    - **Surya Adi Syaputra** (2460522)
+    """)
+    
+    st.markdown("---")
+    st.markdown("#### Contact Person")
+    st.markdown("📞 +62 895-3348-98422 (Fahri)")
+
+
+st.title("Kalkulator Kalibrasi Anak Timbang")
+
+st.header("⚙️ Parameter Input")
+with st.form(key='kalibrasi_form'):
+    col1, col2 = st.columns(2, gap="large")
+    with col1:
+        st.subheader("1. Anak Timbang Standar (S)")
+        nilai_massa_konvensional = st.number_input("Massa Konvensional (g)", format="%.5f", step=1.0)
+        ketidakpastian = st.number_input("Ketidakpastian (mg)", format="%.5f", step=0.001)
+        faktor_cakupan = st.number_input("Faktor Cakupan (k)", value=2.0, step=0.1)
+        st.divider()
+        st.subheader("2. Anak Timbang Uji (T)")
+        massa_nominal = st.number_input("Massa Nominal (g)", format="%.5f", step=1.0)
+        densitas_anak_timbang_uji = st.number_input("Densitas (kg/m³)", value=7950.0)
+        mpe = st.number_input("MPE (mg)", format="%.5f", step=0.1)
+    with col2:
+        st.subheader("3. Data Neraca")
+        kapasitas = st.number_input("Kapasitas (g)", format="%.2f", step=100.0)
+        resolusi = st.number_input("Resolusi (mg)", format="%.5f", step=0.001)
+        st.divider()
+        st.subheader(f"4. Data Pengulangan Pembacaan (mg) Berulang ({st.session_state.num_readings}x)")
+        s_readings = []
+        t_readings = []
+        read_col1, read_col2 = st.columns(2)
+        for i in range(st.session_state.num_readings):
+            with read_col1:
+                s_readings.append(st.number_input(f"Std. S{i+1} (mg)", key=f"s_{i}", format="%.5f", step=0.01))
+            with read_col2:
+                t_readings.append(st.number_input(f"Uji T{i+1} (mg)", key=f"t_{i}", format="%.5f", step=0.01))
+    submit_button = st.form_submit_button(label='🚀 Hitung Kalibrasi', use_container_width=True)
+
+with st.container(border=True):
+    st.write("**Kontrol Pengulangan**")
+    btn_col1, btn_col2, _ = st.columns([1, 1, 10])
+    if btn_col1.button("➕ Tambah"):
+        st.session_state.num_readings += 1
+        st.rerun()
+    if st.session_state.num_readings > 1:
+        if btn_col2.button("➖ Hapus", type="secondary"):
+            st.session_state.num_readings -= 1
+            st.rerun()
+
 if submit_button:
     data_input = {
-        'nilai_massa_konvensional': nilai_massa_konvensional,
-        'ketidakpastian': ketidakpastian,
-        'faktor_cakupan': faktor_cakupan,
-        'massa_nominal': massa_nominal,
-        'densitas_anak_timbang_uji': densitas_anak_timbang_uji,
-        'mpe': mpe,
-        'kapasitas': kapasitas,
-        'resolusi': resolusi,
-        'pembacaan_s_list': s_readings,
-        'pembacaan_t_list': t_readings,
+        'nilai_massa_konvensional': nilai_massa_konvensional, 'ketidakpastian': ketidakpastian,
+        'faktor_cakupan': faktor_cakupan, 'massa_nominal': massa_nominal,
+        'densitas_anak_timbang_uji': densitas_anak_timbang_uji, 'mpe': mpe,
+        'kapasitas': kapasitas, 'resolusi': resolusi,
+        'pembacaan_s_list': s_readings, 'pembacaan_t_list': t_readings,
     }
-
-    hasil = hitung_kalibrasi_revisi(data_input)
-
+    output = hitung_kalibrasi_revisi(data_input)
+    
     st.markdown("---")
-    st.header("Hasil Perhitungan")
+    
+    with st.container(border=True):
+        st.header("📈 Hasil Perhitungan")
 
-    if hasil.get("error"):
-        st.error(f"Terjadi Kesalahan: {hasil['error']}")
-    else:
-        res_col1, res_col2, res_col3 = st.columns(3)
-        with res_col1:
-            st.metric(label="Massa Nominal (g)", value=f"{hasil['massa_nominal_g']:.5f}") # Corrected access to massa_nominal_g
-        with res_col2:
-            st.metric(label="Massa Konvensional (g)", value=f"{hasil['massa_t_konvensional_g']:.5f}")
-        with res_col3:
-            st.metric(label="Ketidakpastian (g)", value=f"{hasil['ketidakpastian_diperluas_g']:.5f}")
-        with res_col3:
-            st.metric(label="Faktor cakupan (k)", value=f"{hasil['faktor_cakupan_k']:.5f}")
-
-        st.markdown("<br>", unsafe_allow_html=True)
+        if output.get("error"):
+            st.error(f"Terjadi Kesalahan: {output['error']}", icon="🚨")
+        else:
+            hasil = output
+            
+            res_col1, res_col2, res_col3, res_col4 = st.columns(4)
+            res_col1.metric("Massa Nominal Uji (g)", f"{hasil['massa_nominal_g']:.4f}")
+            res_col2.metric("Massa Konvensional Hasil (g)", f"{hasil['massa_t_konvensional_g']:.5f}")
+            res_col3.metric("Ketidakpastian Diperluas (g)", f"± {hasil['ketidakpastian_diperluas_g']:.5f}")
+            res_col4.metric("Faktor Cakupan (k)", f"{hasil['faktor_cakupan_k']:.3f}")
